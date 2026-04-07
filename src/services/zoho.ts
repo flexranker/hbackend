@@ -30,11 +30,13 @@ export const createEstimate = async (orderId: string) => {
 
     const estimateData = {
       customer_name: order.customer.name,
-      line_items: order.items.map((item) => ({
-        name: item.product.name,
-        rate: Number(item.price),
-        quantity: item.quantity,
-      })),
+      line_items: order.items
+        .filter((item) => item.product !== null)
+        .map((item) => ({
+          name: item.product!.name,
+          rate: Number(item.price),
+          quantity: item.quantity,
+        })),
       reference_number: order.id,
     };
 

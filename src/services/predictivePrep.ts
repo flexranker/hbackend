@@ -32,6 +32,7 @@ export const calculateExpectedUsage = async (orderId: string): Promise<Ingredien
   const ingredientMap = new Map<string, { name: string; qty: number; unit: string }>();
 
   for (const item of orderItems) {
+    if (!item.product) continue;
     for (const recipe of item.product.recipes) {
       const existing = ingredientMap.get(recipe.ingredientId) || {
         name: recipe.ingredient.name,
