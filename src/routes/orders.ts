@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
+import prisma from "../lib/prisma.js";
 import * as orderService from "../services/orders.js";
 import { extractOrderData } from "../services/aiExtractor.js";
 import { handleVagueOrder } from "../services/smartOrder.js";
+import { logCorrection } from "../services/correctionLedger.js";
 import { validate, validateParams } from "../utils/validator.js";
 
 const router = Router();
@@ -23,7 +25,7 @@ const createOrderSchema = z.object({
 });
 
 const updateStatusSchema = z.object({
-  status: z.enum(["DRAFT", "PENDING_APPROVAL", "CONFIRMED", "PREPARING", "DELIVERED"]),
+  status: z.enum(["DRAFT", "PENDING_REVIEW", "PENDING_APPROVAL", "CONFIRMED", "PREPARING", "DELIVERED"]),
 });
 
 // Smart Order Manager Middleware (with AI Integration)
@@ -106,6 +108,43 @@ router.get("/:id", validateParams(z.object({ id: z.string().uuid() })), async (r
     next(error);
   }
 });
+
+router.patch(
+  "/:id/review",
+  validateParams(z.object({ id: z.string().uuid() })),
+  async (req, res, next) => {
+    try {
+      const orderId = req.params.id;
+      const originalOrder = await orderService.getOrder(orderId);
+      
+      if (!originalOrder) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      if (originalOrder.status !== "PENDING_REVIEW") {
+        return res.status(400).json({ error: "Order is not in PENDING_REVIEW status" });
+      }
+
+      // Log correction before updating
+      await logCorrection(orderId, originalOrder, req.body);
+
+      // Simple update: In real app, you'd handle item updates carefully
+      const { items, ...orderData } = req.body;
+      
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          ...orderData,
+          status: "PENDING_APPROVAL",
+        },
+      });
+
+      res.json(updatedOrder);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 router.patch(
   "/:id/status",

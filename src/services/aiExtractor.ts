@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from "axios";
 import { config } from "../config.js";
 import logger from "../utils/logger.js";
 import { resolveProduct, type ResolvedProduct } from "../utils/productResolver.js";
@@ -9,7 +10,7 @@ const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash",
   systemInstruction: `
     You are an AI order extractor for a corporate catering system.
-    Extract the following information from the provided text and return it as a strictly formatted JSON object.
+    Extract the following information from the provided text, image, or audio and return it as a strictly formatted JSON object.
     
     Fields:
     - items: array of objects with 'name' and 'qty' (number)
@@ -18,7 +19,7 @@ const model = genAI.getGenerativeModel({
 
     Rules:
     - If a quantity is not explicitly mentioned but the item is, assume 1.
-    - If the text is "Same as last time" or similar, return empty items array.
+    - If the input is "Same as last time" or similar, return empty items array.
     - Only include items that are clearly food or beverage products.
   `,
 });
@@ -35,12 +36,47 @@ export interface AIExtractedOrder {
   confidence_score: number;
 }
 
-export const extractOrderData = async (rawText: string): Promise<AIExtractedOrder> => {
+async function fetchRemoteFile(url: string): Promise<{ data: string; mimeType: string }> {
+  const response = await axios.get(url, { responseType: "arraybuffer" });
+  const base64 = Buffer.from(response.data, "binary").toString("base64");
+  const mimeType = response.headers["content-type"];
+  return { data: base64, mimeType };
+}
+
+export const extractOrderData = async (
+  input: string,
+  type: "text" | "image" | "audio" = "text",
+): Promise<AIExtractedOrder> => {
   try {
-    const prompt = `Extract order from this text: "${rawText}"`;
+    let parts: any[] = [];
+
+    if (type === "text") {
+      parts = [{ text: `Extract order from this text: "${input}"` }];
+    } else {
+      // Handle URL or base64
+      let fileData: { data: string; mimeType: string };
+      if (input.startsWith("http")) {
+        fileData = await fetchRemoteFile(input);
+      } else {
+        // Assume base64: mimeType;base64,data
+        const [meta, data] = input.split(",");
+        const mimeType = meta.split(":")[1].split(";")[0];
+        fileData = { data, mimeType };
+      }
+
+      parts = [
+        {
+          inlineData: {
+            data: fileData.data,
+            mimeType: fileData.mimeType,
+          },
+        },
+        { text: "Extract the order from this media file." },
+      ];
+    }
 
     const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: [{ role: "user", parts }],
       generationConfig: {
         responseMimeType: "application/json",
       },
@@ -74,9 +110,8 @@ export const extractOrderData = async (rawText: string): Promise<AIExtractedOrde
     }
 
     if (extractedItems.length === 0) {
-      // If items are missing, check if it's a "Same as last time" request
       const vagueTriggers = ["same", "usual", "repeat", "last time"];
-      const isVague = vagueTriggers.some((t) => rawText.toLowerCase().includes(t));
+      const isVague = type === "text" && vagueTriggers.some((t) => input.toLowerCase().includes(t));
 
       if (!isVague) {
         requires_manual_intervention = true;

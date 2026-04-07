@@ -5,6 +5,8 @@ import helmet from "helmet";
 import { config } from "./config.js";
 import { ipRateLimiter } from "./middleware/rateLimit.js";
 import adminRouter from "./routes/admin.js";
+import adminAnalyticsRouter from "./routes/adminAnalytics.js";
+import aiIngestRouter from "./routes/aiIngest.js";
 import customersRouter from "./routes/customers.js";
 import notificationsRouter from "./routes/notifications.js";
 import ordersRouter from "./routes/orders.js";
@@ -36,9 +38,11 @@ export function createApp() {
   app.use("/api/users", usersRouter);
   app.use("/api/posts", postsRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api/v1/admin/analytics", adminAnalyticsRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/uploads", uploadsRouter);
   app.use("/api/orders", ordersRouter);
+  app.use("/api/v1/orders", aiIngestRouter);
   app.use("/api/customers", customersRouter);
   app.use("/api/products", productsRouter);
 

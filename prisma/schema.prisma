@@ -9,6 +9,7 @@ datasource db {
 
 enum OrderStatus {
   DRAFT
+  PENDING_REVIEW
   PENDING_APPROVAL
   CONFIRMED
   PREPARING
@@ -20,6 +21,8 @@ enum OrderSource {
   WHATSAPP
   EMAIL
   PHONE
+  VOICE
+  IMAGE
 }
 
 model Customer {
@@ -29,6 +32,7 @@ model Customer {
   phone       String?
   companyName String?
   orders      Order[]
+  contractPrices ContractPrice[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -39,6 +43,7 @@ model Product {
   description String?
   price       Decimal     @db.Decimal(10, 2)
   orderItems  OrderItem[]
+  contractPrices ContractPrice[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -61,19 +66,56 @@ model Order {
   extractedLocation          String?
   extractedTime              String?
   items          OrderItem[]
+  corrections    CorrectionLedger[]
 
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
 
 model OrderItem {
-  id        String  @id @default(uuid())
-  order     Order   @relation(fields: [orderId], references: [id])
-  orderId   String
-  product   Product @relation(fields: [productId], references: [id])
-  productId String
-  quantity  Int
-  price     Decimal @db.Decimal(10, 2)
+  id             String  @id @default(uuid())
+  order          Order   @relation(fields: [orderId], references: [id])
+  orderId        String
+  product        Product @relation(fields: [productId], references: [id])
+  productId      String
+  quantity       Int
+  cookedQuantity Int     @default(0)
+  price          Decimal @db.Decimal(10, 2)
+}
+
+model ContractPrice {
+  id         String   @id @default(uuid())
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId String
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  price      Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([customerId, productId])
+}
+
+model RevenueLeakage {
+  id          String   @id @default(uuid())
+  date        DateTime @default(now())
+  productId   String
+  productName String
+  expectedQty Int      @default(0) // Invoiced
+  actualQty   Int      @default(0) // Cooked
+  discrepancy Int      @default(0)
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model CorrectionLedger {
+  id                  String   @id @default(uuid())
+  order               Order    @relation(fields: [orderId], references: [id])
+  orderId             String
+  originalAiData      Json
+  adminCorrectedData  Json
+  fieldsCorrected     Int      @default(0)
+  createdAt           DateTime @default(now())
 }
 
 model AuditLog {

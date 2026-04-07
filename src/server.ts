@@ -3,15 +3,19 @@ import app from "./app.js";
 import { config } from "./config.js";
 import { initNotificationService } from "./services/notifications.js";
 import { initNudgeSystem } from "./services/nudge.js";
+import { initFinancialIntegrityService } from "./services/financialIntegrity.js";
 import logger from "./utils/logger.js";
 
 const httpServer = createServer(app);
 
 // Initialize Socket.io via NotificationService
-initNotificationService(httpServer);
+const io = initNotificationService(httpServer);
 
 // Initialize Nudge cron job
 initNudgeSystem();
+
+// Initialize Financial Integrity Service
+initFinancialIntegrityService(io);
 
 httpServer.listen(config.port, () => {
   logger.info(`Server is running in ${config.nodeEnv} mode on port ${config.port}`);

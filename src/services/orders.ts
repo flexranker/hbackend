@@ -2,6 +2,7 @@ import type { OrderSource, OrderStatus } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 import { notifyNewOrder, notifyStatusUpdate } from "./notifications.js";
 import { createEstimate, convertToInvoice } from "./zoho.js";
+import { getEffectivePrice } from "./financialIntegrity.js";
 
 export interface CreateOrderItem {
   productId: string;
@@ -12,6 +13,7 @@ export interface CreateOrderData {
   customerId: string;
   providerId: string;
   source: OrderSource;
+  status?: OrderStatus;
   items: CreateOrderItem[];
   notes?: string;
   requiresManualIntervention?: boolean;
@@ -25,6 +27,7 @@ export const createOrder = async (data: CreateOrderData) => {
     customerId,
     providerId,
     source,
+    status,
     items,
     notes,
     requiresManualIntervention,
@@ -33,26 +36,19 @@ export const createOrder = async (data: CreateOrderData) => {
     extractedTime,
   } = data;
 
-  // Calculate total amount (fetching prices from DB for security)
-  const productIds = items.map((i) => i.productId);
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-  });
-
-  const productPriceMap = new Map(products.map((p) => [p.id, p.price]));
-
   let totalAmount = 0;
-  const orderItemsData = items.map((item) => {
-    const price = productPriceMap.get(item.productId);
-    if (!price) throw new Error(`Product ${item.productId} not found`);
-    const linePrice = Number(price) * item.quantity;
-    totalAmount += linePrice;
-    return {
-      productId: item.productId,
-      quantity: item.quantity,
-      price: price,
-    };
-  });
+  const orderItemsData = await Promise.all(
+    items.map(async (item) => {
+      const price = await getEffectivePrice(customerId, item.productId);
+      const linePrice = Number(price) * item.quantity;
+      totalAmount += linePrice;
+      return {
+        productId: item.productId,
+        quantity: item.quantity,
+        price: price,
+      };
+    }),
+  );
 
   const order = await prisma.order.create({
     data: {
@@ -65,7 +61,7 @@ export const createOrder = async (data: CreateOrderData) => {
       extractedLocation,
       extractedTime,
       totalAmount,
-      status: "DRAFT",
+      status: status || "DRAFT",
       isInvoiced: false,
       items: {
         create: orderItemsData,
@@ -133,5 +129,15 @@ export const markAsInvoiced = async (id: string) => {
   return await prisma.order.update({
     where: { id },
     data: { isInvoiced: true },
+  });
+};
+
+/**
+ * Kitchen Log: Mark item as cooked
+ */
+export const updateCookedQuantity = async (orderItemId: string, cookedQty: number) => {
+  return await prisma.orderItem.update({
+    where: { id: orderItemId },
+    data: { cookedQuantity: cookedQty },
   });
 };
