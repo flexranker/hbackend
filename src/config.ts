@@ -35,5 +35,16 @@ export const config = {
     ),
     clientEmail: firebaseConfig.client_email || process.env.FIREBASE_CLIENT_EMAIL || "",
   },
-  adminUids: process.env.ADMIN_UIDS ? process.env.ADMIN_UIDS.split(",") : [],
+  adminUids: process.env.ADMIN_UIDS
+    ? process.env.ADMIN_UIDS.split(",")
+        .map((uid) => uid.trim())
+        .filter(Boolean)
+    : [],
 };
+
+if (config.adminUids.length === 0) {
+  console.warn(
+    "[config] WARNING: No ADMIN_UIDS configured. All admin endpoints will return 403. " +
+      "Set ADMIN_UIDS=<your-firebase-uid> in .env",
+  );
+}

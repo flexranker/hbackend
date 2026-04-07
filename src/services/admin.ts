@@ -1,4 +1,5 @@
-import { NotFoundError } from "../utils/errors.js";
+import { config } from "../config.js";
+import { ForbiddenError, NotFoundError } from "../utils/errors.js";
 import { getFirestoreDb } from "./firebase.js";
 
 interface UserRecord {
@@ -26,7 +27,60 @@ interface Stats {
 
 const db = getFirestoreDb();
 
+let adminUidsCache: { uids: string[]; expiresAt: number } | null = null;
+
 export const adminService = {
+  async getAdminUids(): Promise<string[]> {
+    if (adminUidsCache && adminUidsCache.expiresAt > Date.now()) {
+      return adminUidsCache.uids;
+    }
+
+    const doc = await db.collection("_admin").doc("config").get();
+    const stored = (doc.data()?.adminUids as string[]) ?? [];
+
+    // Merge env-bootstrapped UIDs with stored ones; env always wins
+    const allAdmins = Array.from(new Set([...config.adminUids, ...stored]));
+
+    adminUidsCache = {
+      uids: allAdmins,
+      expiresAt: Date.now() + 60 * 1000, // 60-second TTL
+    };
+
+    return allAdmins;
+  },
+
+  async addAdminUid(uid: string): Promise<void> {
+    const docRef = db.collection("_admin").doc("config");
+    const doc = await docRef.get();
+    const stored = (doc.data()?.adminUids as string[]) ?? [];
+
+    if (stored.includes(uid)) return;
+
+    await docRef.set({ adminUids: [...stored, uid] }, { merge: true });
+
+    // Invalidate cache
+    adminUidsCache = null;
+  },
+
+  async removeAdminUid(uid: string): Promise<void> {
+    if (config.adminUids.includes(uid)) {
+      throw new ForbiddenError(
+        "Cannot remove a bootstrap admin via API. Edit ADMIN_UIDS in .env.",
+      );
+    }
+
+    const docRef = db.collection("_admin").doc("config");
+    const doc = await docRef.get();
+    const stored = (doc.data()?.adminUids as string[]) ?? [];
+
+    if (!stored.includes(uid)) return;
+
+    await docRef.set({ adminUids: stored.filter((u) => u !== uid) }, { merge: true });
+
+    // Invalidate cache
+    adminUidsCache = null;
+  },
+
   async banUser(userId: string, reason?: string): Promise<UserRecord> {
     const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();

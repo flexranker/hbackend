@@ -1,15 +1,19 @@
 import type { NextFunction, Request, Response } from "express";
-import { config } from "../config.js";
+import { adminService } from "../services/admin.js";
 import { ForbiddenError } from "../utils/errors.js";
 
-export const requireAdmin = (req: Request, _res: Response, next: NextFunction) => {
+export const requireAdmin = async (req: Request, _res: Response, next: NextFunction) => {
   if (!req.user) {
     return next(new ForbiddenError("Authentication required"));
   }
 
-  if (!config.adminUids.includes(req.user.uid)) {
-    return next(new ForbiddenError("Admin access required"));
+  try {
+    const adminUids = await adminService.getAdminUids();
+    if (!adminUids.includes(req.user.uid)) {
+      return next(new ForbiddenError("Admin access required"));
+    }
+    next();
+  } catch (err) {
+    next(err);
   }
-
-  next();
 };

@@ -11,6 +11,10 @@ const idParamSchema = z.object({
   id: z.string().min(1).max(128),
 });
 
+const uidParamSchema = z.object({
+  uid: z.string().min(1).max(128),
+});
+
 const _banUserSchema = z.object({
   reason: z.string().optional(),
 });
@@ -76,6 +80,50 @@ router.get(
     try {
       const stats = await adminService.getStats();
       res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.get(
+  "/admins",
+  authenticate,
+  requireAdmin,
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const adminUids = await adminService.getAdminUids();
+      res.json(adminUids);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.post(
+  "/admins/:uid",
+  authenticate,
+  requireAdmin,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { uid } = uidParamSchema.parse(req.params);
+      await adminService.addAdminUid(uid);
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.delete(
+  "/admins/:uid",
+  authenticate,
+  requireAdmin,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { uid } = uidParamSchema.parse(req.params);
+      await adminService.removeAdminUid(uid);
+      res.status(204).end();
     } catch (error) {
       next(error);
     }
