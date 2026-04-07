@@ -12,6 +12,7 @@ import postsRouter from "./routes/posts.js";
 import productsRouter from "./routes/products.js";
 import uploadsRouter from "./routes/uploads.js";
 import usersRouter from "./routes/users.js";
+import prisma from "./lib/prisma.js";
 import { AppError } from "./utils/errors.js";
 import logger from "./utils/logger.js";
 
@@ -60,6 +61,25 @@ export function createApp() {
       method: req.method,
       userId: req.user?.uid ?? null,
     });
+
+    // Log 500 errors to AuditLog table
+    prisma.auditLog
+      .create({
+        data: {
+          level: "ERROR",
+          message: err.message || "Internal server error",
+          stack: err.stack,
+          context: {
+            errorId,
+            path: req.path,
+            method: req.method,
+            userId: req.user?.uid ?? null,
+          },
+        },
+      })
+      .catch((auditErr) => {
+        logger.error({ auditErr }, "Failed to create AuditLog entry");
+      });
 
     if (config.nodeEnv === "development") {
       return res.status(500).json({

@@ -69,3 +69,12 @@ model OrderItem {
   quantity  Int
   price     Decimal @db.Decimal(10, 2)
 }
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  level     String   @default("ERROR")
+  message   String
+  stack     String?
+  context   Json?
+  createdAt DateTime @default(now())
+}
