@@ -1,8 +1,8 @@
 import type { OrderSource, OrderStatus } from "@prisma/client";
 import prisma from "../lib/prisma.js";
-import { notifyNewOrder, notifyStatusUpdate } from "./notifications.js";
-import { createEstimate, convertToInvoice } from "./zoho.js";
 import { getEffectivePrice } from "./financialIntegrity.js";
+import { notifyNewOrder, notifyStatusUpdate } from "./notifications.js";
+import { convertToInvoice, createEstimate } from "./zoho.js";
 
 export interface CreateOrderItem {
   productId: string;
@@ -98,6 +98,11 @@ export const getOrders = async () => {
     orderBy: { createdAt: "desc" },
     include: {
       customer: true,
+      items: {
+        include: {
+          product: true,
+        },
+      },
     },
   });
 };
