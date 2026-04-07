@@ -1,116 +1,95 @@
-# hackathon-backend
+# 🍱 Snap Order: AI-Powered Corporate Catering OMS
 
-Express + TypeScript backend for hackathons. **Frontend: Firebase Auth only. Backend: ALL data operations.**
+Snap Order is an intelligent, high-performance Order Management System (OMS) designed to unify fragmented catering inputs (WhatsApp, Voice, Images, Web) into a single, automated workflow. It features self-improving AI, real-time safety alerts, and deep financial integration.
 
-## Architecture
+---
 
+## 🚀 Key Innovations
+
+### 1. Multi-Modal AI Concierge
+- **Vision Ingestion:** Snap a photo of a handwritten menu or order sheet; the AI extracts items, quantities, and locations automatically.
+- **Voice Ingestion:** Process and transcribe WhatsApp voice notes into structured database orders.
+- **Context-Aware Dialogue:** The AI recognizes returning customers, remembers their order history, and applies contract-specific pricing.
+
+### 2. Self-Improving Feedback Loop
+- **Correction Ledger:** Every manual edit by an admin is logged.
+- **Prompt Optimizer:** A daily automated process that teaches the AI from its own mistakes, generating "Few-Shot" examples to improve future extraction accuracy.
+
+### 3. Food Safety & Dietary Protection
+- **Allergy Scanning:** Automatic AI scanning for 10+ allergens and dietary preferences (Halal, Vegan, Keto).
+- **Kitchen Alerts:** Real-time Socket.io notifications ("ALERT_DIETARY") flashing critical safety info directly to the kitchen staff.
+
+### 4. Financial Integrity Engine
+- **Automated Accounting:** Full Zoho Books integration—Estimates are created on approval, and Invoices are generated on delivery.
+- **Revenue Leakage Audit:** Daily automated reconciliation comparing items cooked in the kitchen vs. items actually billed.
+- **Contract Pricing:** Automatic lookup for customer-specific rates with a global price fallback.
+
+---
+
+## 🛠️ Technical Stack
+- **Runtime:** Node.js (TypeScript)
+- **Framework:** Express.js
+- **Database:** PostgreSQL (Supabase) + Prisma ORM
+- **AI Engine:** Google Gemini 1.5 Flash
+- **Real-Time:** Socket.io
+- **Automation:** Node-Cron
+- **Validation:** Zod + Fuse.js (Fuzzy Matching)
+
+---
+
+## 🔌 API Overview
+
+### AI Ingestion
+- `POST /api/v1/orders/ingest-ai`: Ingest text, image, or audio for AI extraction.
+- `PATCH /api/orders/:id/review`: Admin review route that feeds the AI learning loop.
+
+### Kitchen & Prep
+- `GET /api/kitchen/:id/prediction`: Get AI-calculated ingredient prep lists.
+- `POST /api/kitchen/:id/wastage`: Record actual ingredient usage for audit.
+
+### Webhooks
+- `POST /api/v1/webhooks/whatsapp`: Twilio integration for the AI Concierge.
+
+### Admin & Analytics
+- `GET /api/v1/admin/analytics/ai-accuracy`: View real-time AI performance metrics.
+- `POST /api/v1/admin/analytics/optimize-prompt`: Manually trigger AI learning.
+
+---
+
+## 🚦 Getting Started
+
+### 1. Environment Configuration
+Create a `.env` file with the following:
+```env
+DATABASE_URL="your_pooled_postgres_url"
+DIRECT_URL="your_direct_postgres_url"
+GEMINI_API_KEY="your_google_ai_studio_key"
+JWT_SECRET="your_secure_secret"
 ```
-Frontend (Firebase Auth) ──────► Backend API ──────► Firestore (Admin SDK)
-                         Bearer <token>
-```
 
-- **Frontend**: Handles Firebase Auth (login/signup only)
-- **Backend**: ALL data operations via REST API
-- **Firestore**: Blocked for direct client writes via security rules
-
-## Data Flow
-
-1. Frontend: User logs in via Firebase Auth → gets ID token
-2. Frontend: `data-client.ts` calls backend APIs with `Authorization: Bearer <token>`
-3. Backend: Verifies token via Firebase Admin SDK
-4. Backend: Reads/writes Firestore using Admin SDK (bypasses client security rules)
-5. Response sent back to frontend
-
-## API Endpoints
-
-### Public
-- `GET /api/health` - Health check (no auth required)
-
-### Users (Requires Firebase Auth)
-- `GET /api/users/:id` - Get user profile
-- `POST /api/users` - Create user (onboarding)
-- `PATCH /api/users/:id` - Update profile
-- `DELETE /api/users/:id` - Delete account
-
-### Posts (Requires Firebase Auth)
-- `GET /api/posts` - List posts (paginated: `?limit=10&page=1`)
-- `GET /api/posts/:id` - Get single post
-- `POST /api/posts` - Create post
-- `PATCH /api/posts/:id` - Update post
-- `DELETE /api/posts/:id` - Delete post
-
-### Admin (Requires Firebase Auth + admin UID)
-- `POST /api/admin/users/:id/ban` - Ban a user
-- `POST /api/admin/users/:id/unban` - Unban a user
-- `POST /api/admin/posts/:id/feature` - Feature/unfeature post
-- `GET /api/admin/stats` - Platform statistics
-- `POST /api/notifications/send-all` - Send to all users
-
-## Security
-
-- **Rate limiting**: 100 req/min per IP
-- **Token verification**: Firebase Admin SDK validates Bearer tokens
-- **Firestore rules**: Direct client writes blocked (`allow read, write: if false;`)
-- **Admin access**: Controlled via `ADMIN_UIDS` env var
-- **Input validation**: Zod schemas on all endpoints
-
-## Quick Start
-
-1. `./bootstrap.sh`       — copies env templates
-2. Fill in Firebase credentials in `fireconfig.json`
-3. `docker-compose up`    — starts everything
-
-That's it. Frontend on :3000, backend on :3001, emulator UI on :4000.
-
-## Firebase Setup
-
-1. Go to Firebase Console → Project Settings → Service accounts
-2. Click "Generate new private key"
-3. Save the JSON as `fireconfig.json` in project root
-
-## Environment Variables
-
+### 2. Installation & Setup
 ```bash
-# Admin UIDs (comma-separated)
-ADMIN_UIDS=uid1,uid2
-
-# Frontend origin (CORS)
-FRONTEND_URL=http://localhost:3000
-
-# Dev mode
-NODE_ENV=development
-PORT=3001
-```
-# Firebase Admin (secret)
-FIREBASE_ADMIN_CREDENTIALS={"type":"service_account",...}
-
-# Admin UIDs (comma-separated)
-ADMIN_UIDS=uid1,uid2
-
-# Frontend origin (CORS)
-FRONTEND_URL=http://localhost:3000
-
-# Dev mode
-NODE_ENV=development
-PORT=3001
+yarn install
+npx prisma db push
+npx prisma db seed # Populates demo data for AI and Revenue audits
 ```
 
-## Firestore Security Rules
-
-Deploy `firestore.rules` to block direct client access:
-
+### 3. Development
 ```bash
-firebase deploy --only firestore:rules
+yarn dev
 ```
 
-## Scripts
+---
 
-```json
-{
-  "dev": "tsx watch src/server.ts",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "lint": "biome check src/",
-  "type-check": "tsc --noEmit"
-}
-```
+## 📊 Documentation
+Detailed guides for specific team roles:
+- **[HACKATHON_REPORT.md](./HACKATHON_REPORT.md)**: Executive summary of all implemented modules.
+- **[FRONTEND_INTEGRATION_GUIDE.md](./FRONTEND_INTEGRATION_GUIDE.md)**: Technical spec for frontend-backend connection.
+- **[GIT_TIMELINE_REPORT.md](./GIT_TIMELINE_REPORT.md)**: Technical audit of the project development timeline.
+
+---
+
+## 🛡️ Security & Fail-Safes
+- **Trust Proxy:** Optimized for Leapcell/Vercel deployments.
+- **Audit Logs:** Global middleware logging all system errors to a permanent `AuditLog` table.
+- **Nudge System:** Automated watchdog that alerts on stuck orders sitting in `DRAFT` for >4 hours.
