@@ -51,8 +51,11 @@ model Order {
   totalAmount  Decimal     @default(0) @db.Decimal(10, 2)
   customer     Customer    @relation(fields: [customerId], references: [id])
   customerId   String
-  providerId   String
-  items        OrderItem[]
+  providerId     String
+  zohoEstimateId String?
+  zohoInvoiceId  String?
+  items          OrderItem[]
+
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }

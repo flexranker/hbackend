@@ -44,6 +44,11 @@ export const config = {
     ipMax: process.env.RATE_LIMIT_IP_MAX ? parseInt(process.env.RATE_LIMIT_IP_MAX, 10) : 300,
     userMax: process.env.RATE_LIMIT_USER_MAX ? parseInt(process.env.RATE_LIMIT_USER_MAX, 10) : 100,
   },
+  zoho: {
+    orgId: process.env.ZOHO_ORG_ID || "",
+    authToken: process.env.ZOHO_AUTH_TOKEN || "",
+    apiUrl: process.env.ZOHO_API_URL || "https://www.zohoapis.com/books/v3",
+  },
 };
 
 if (config.adminUids.length === 0) {

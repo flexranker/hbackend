@@ -1,6 +1,7 @@
 import type { OrderSource, OrderStatus } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 import { notifyNewOrder, notifyStatusUpdate } from "./notifications.js";
+import { createEstimate, convertToInvoice } from "./zoho.js";
 
 export interface CreateOrderItem {
   productId: string;
@@ -93,6 +94,17 @@ export const updateOrderStatus = async (id: string, status: OrderStatus) => {
 
   // Notify status update
   notifyStatusUpdate(order.providerId, order.id, status);
+
+  // Zoho Integration Triggers
+  if (status === "PENDING_APPROVAL") {
+    createEstimate(id).catch((err) =>
+      console.error(`[Zoho] Failed to create estimate for order ${id}:`, err.message),
+    );
+  } else if (status === "DELIVERED") {
+    convertToInvoice(id).catch((err) =>
+      console.error(`[Zoho] Failed to convert estimate to invoice for order ${id}:`, err.message),
+    );
+  }
 
   return order;
 };
