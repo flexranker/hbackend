@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config.js";
 import logger from "../utils/logger.js";
 
@@ -52,8 +52,8 @@ export const extractOrderData = async (rawText: string): Promise<AIExtractedOrde
     if (!parsed.items || parsed.items.length === 0) {
       // If items are missing, check if it's a "Same as last time" request
       const vagueTriggers = ["same", "usual", "repeat", "last time"];
-      const isVague = vagueTriggers.some(t => rawText.toLowerCase().includes(t));
-      
+      const isVague = vagueTriggers.some((t) => rawText.toLowerCase().includes(t));
+
       if (!isVague) {
         requires_manual_intervention = true;
         confidence_score -= 0.5;

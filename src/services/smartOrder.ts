@@ -44,12 +44,12 @@ export const handleVagueOrder = async (customerId: string, notes: string | null)
   if (isVague) {
     logger.info(`Vague WhatsApp order detected for customer ${customerId}: "${notes}"`);
     const lastOrder = await getLastSuccessfulOrder(customerId);
-    
+
     if (lastOrder && lastOrder.items.length > 0) {
       logger.info(`Auto-filling order from last successful order ${lastOrder.id}`);
       return lastOrder.items;
     }
-    
+
     logger.warn(`No recent successful order found for customer ${customerId} to auto-fill.`);
   }
 

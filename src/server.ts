@@ -14,9 +14,7 @@ initNotificationService(httpServer);
 initNudgeSystem();
 
 httpServer.listen(config.port, () => {
-  logger.info(
-    `Server is running in ${config.nodeEnv} mode on port ${config.port}`,
-  );
+  logger.info(`Server is running in ${config.nodeEnv} mode on port ${config.port}`);
   logger.info(`Frontend URL: ${config.frontendUrl}`);
 });
 

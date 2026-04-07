@@ -69,16 +69,19 @@ export const convertToInvoice = async (orderId: string) => {
 
     await prisma.order.update({
       where: { id: orderId },
-      data: { 
+      data: {
         zohoInvoiceId: invoiceId,
-        isInvoiced: true 
+        isInvoiced: true,
       },
     });
 
     logger.info(`Zoho Invoice created for order ${orderId}: ${invoiceId}`);
     return invoiceId;
   } catch (error: any) {
-    logger.error({ error: error.response?.data || error.message }, "Error converting Zoho Estimate to Invoice");
+    logger.error(
+      { error: error.response?.data || error.message },
+      "Error converting Zoho Estimate to Invoice",
+    );
     throw error;
   }
 };
