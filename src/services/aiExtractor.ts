@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config.js";
 import logger from "../utils/logger.js";
+import { resolveProduct, type ResolvedProduct } from "../utils/productResolver.js";
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
@@ -22,8 +23,12 @@ const model = genAI.getGenerativeModel({
   `,
 });
 
+export interface AIExtractedItem extends ResolvedProduct {
+  qty: number;
+}
+
 export interface AIExtractedOrder {
-  items: { name: string; qty: number }[];
+  items: AIExtractedItem[];
   delivery_time: string | null;
   location: string | null;
   requires_manual_intervention: boolean;
@@ -49,7 +54,26 @@ export const extractOrderData = async (rawText: string): Promise<AIExtractedOrde
     let requires_manual_intervention = false;
     let confidence_score = 1.0;
 
-    if (!parsed.items || parsed.items.length === 0) {
+    const extractedItems: { name: string; qty: number }[] = parsed.items || [];
+    const resolvedItems: AIExtractedItem[] = [];
+
+    for (const item of extractedItems) {
+      const resolved = await resolveProduct(item.name);
+      resolvedItems.push({
+        ...resolved,
+        qty: item.qty,
+      });
+
+      if (resolved.status === "UNRECOGNIZED") {
+        requires_manual_intervention = true;
+        confidence_score -= 0.2;
+      } else if (resolved.status === "NEEDS_CONFIRMATION") {
+        requires_manual_intervention = true;
+        confidence_score -= 0.1;
+      }
+    }
+
+    if (extractedItems.length === 0) {
       // If items are missing, check if it's a "Same as last time" request
       const vagueTriggers = ["same", "usual", "repeat", "last time"];
       const isVague = vagueTriggers.some((t) => rawText.toLowerCase().includes(t));
@@ -66,7 +90,7 @@ export const extractOrderData = async (rawText: string): Promise<AIExtractedOrde
     }
 
     return {
-      items: parsed.items || [],
+      items: resolvedItems,
       delivery_time: parsed.delivery_time || null,
       location: parsed.location || null,
       requires_manual_intervention,

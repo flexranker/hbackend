@@ -41,22 +41,27 @@ const smartOrderManager = async (req: any, _res: any, next: any) => {
           // 2. If not repeat, try AI Extraction from notes
           const extracted = await extractOrderData(notes);
 
-          // Map extracted item names to product IDs (simple fuzzy match or just for demo)
-          // For this hackathon, we'll assume we need to match names to real products
-          // To keep it simple, we'll store the AI findings in the request
           req.body.requiresManualIntervention = extracted.requires_manual_intervention;
           req.body.confidenceScore = extracted.confidence_score;
           req.body.extractedLocation = extracted.location;
           req.body.extractedTime = extracted.delivery_time;
 
-          // Note: Full item matching logic would go here.
-          // For now, if AI extracted items, we pass them along if they match known products.
-          // For the sake of the task, we'll prioritize the AI service's extracted items.
-          // (In a real app, you'd fetch all products and find the best UUID matches)
+          // Map AI extracted items to real product IDs where possible
           if (!req.body.items && extracted.items.length > 0) {
-            // Placeholder: In a real system, you'd resolve these names to IDs
-            // For this demo, we'll flag for manual intervention if we can't auto-resolve
-            req.body.requiresManualIntervention = true;
+            req.body.items = extracted.items
+              .filter((item) => item.productId !== null)
+              .map((item) => ({
+                productId: item.productId,
+                quantity: item.qty,
+              }));
+            
+            // If any item was unrecognized or needs confirmation, ensure manual intervention is flagged
+            const hasUncertainItems = extracted.items.some(
+              (item) => item.status === "UNRECOGNIZED" || item.status === "NEEDS_CONFIRMATION"
+            );
+            if (hasUncertainItems) {
+              req.body.requiresManualIntervention = true;
+            }
           }
         }
       }
