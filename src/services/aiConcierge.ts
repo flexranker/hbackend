@@ -4,7 +4,12 @@ import { config } from "../config.js";
 import logger from "../utils/logger.js";
 import { resolveProduct } from "../utils/productResolver.js";
 
-const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+async function fetchRemoteFile(url: string): Promise<{ data: string; mimeType: string }> {
+  const response = await axios.get(url, { responseType: "arraybuffer" });
+  const base64 = Buffer.from(response.data, "binary").toString("base64");
+  const mimeType = response.headers["content-type"];
+  return { data: base64, mimeType };
+}
 
 export interface ConciergeResponse {
   intent: "ORDER" | "INQUIRY" | "UPDATE" | "REGISTRATION";
@@ -13,19 +18,17 @@ export interface ConciergeResponse {
   friendly_reply: string;
 }
 
-async function fetchRemoteFile(url: string): Promise<{ data: string; mimeType: string }> {
-  const response = await axios.get(url, { responseType: "arraybuffer" });
-  const base64 = Buffer.from(response.data, "binary").toString("base64");
-  const mimeType = response.headers["content-type"];
-  return { data: base64, mimeType };
-}
-
 export const processConciergeMessage = async (
   rawText: string,
   userContext: any,
   mediaUrl?: string
 ): Promise<ConciergeResponse> => {
   try {
+    if (!config.gemini.apiKey) {
+      throw new Error("GEMINI_API_KEY is missing in configuration");
+    }
+
+    const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
       systemInstruction: `
@@ -84,7 +87,7 @@ export const processConciergeMessage = async (
     return {
       intent: "INQUIRY",
       items: [],
-      friendly_reply: "I'm sorry, I'm having trouble processing your request right now. Please try again or contact support.",
+      friendly_reply: `I'm sorry, I'm having a technical glitch (${error.message}). Please try again or contact support.`,
     };
   }
 };
