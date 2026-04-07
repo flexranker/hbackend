@@ -56,14 +56,11 @@ Frontend (Firebase Auth) ──────► Backend API ──────►
 
 ## Quick Start
 
-```bash
-yarn install
-cp .env.example .env
-cp fireconfig.example.json fireconfig.json
-# Add Firebase credentials to fireconfig.json (from Firebase Console > Project Settings > Service Accounts)
-# Add admin UIDs to ADMIN_UIDS
-yarn dev
-```
+1. `./bootstrap.sh`       — copies env templates
+2. Fill in Firebase credentials in `fireconfig.json`
+3. `docker-compose up`    — starts everything
+
+That's it. Frontend on :3000, backend on :3001, emulator UI on :4000.
 
 ## Firebase Setup
 

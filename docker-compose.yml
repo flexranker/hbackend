@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  firebase-emulators:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      sh -c "npm install -g firebase-tools &&
+             firebase emulators:start --only auth,firestore,storage
+             --project demo-hackathon"
+    ports:
+      - "9099:9099"   # Auth emulator
+      - "8080:8080"   # Firestore emulator
+      - "9199:9199"   # Storage emulator
+      - "4000:4000"   # Emulator UI
+    environment:
+      - FIREBASE_TOKEN=${FIREBASE_TOKEN}
+
+  backend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "yarn install && yarn dev"
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - FIRESTORE_EMULATOR_HOST=firebase-emulators:8080
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase-emulators:9099
+      - FIREBASE_STORAGE_EMULATOR_HOST=firebase-emulators:9199
+      - ADMIN_UIDS=${ADMIN_UIDS}
+      - PORT=3001
+    depends_on:
+      - firebase-emulators
+    env_file:
+      - ./.env
+
+  # Note: Frontend service is commented out as it belongs in a sibling directory
+  # frontend:
+  #   image: node:20-alpine
+  #   working_dir: /app/hackathon-frontend
+  #   volumes:
+  #     - ../hackathon-frontend:/app/hackathon-frontend
+  #   command: sh -c "yarn install && yarn dev"
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+  #     - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=localhost
+  #   depends_on:
+  #     - backend
+  #   env_file:
+  #     - ../hackathon-frontend/.env.local
