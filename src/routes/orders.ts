@@ -7,6 +7,7 @@ const router = Router();
 
 const createOrderSchema = z.object({
   customerId: z.string().uuid(),
+  providerId: z.string().uuid(),
   source: z.enum(["WEB", "WHATSAPP", "EMAIL", "PHONE"]),
   items: z.array(
     z.object({

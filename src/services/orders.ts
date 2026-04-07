@@ -1,5 +1,6 @@
 import type { OrderSource, OrderStatus } from "@prisma/client";
 import prisma from "../lib/prisma.js";
+import { notifyNewOrder, notifyStatusUpdate } from "./notifications.js";
 
 export interface CreateOrderItem {
   productId: string;
@@ -8,12 +9,13 @@ export interface CreateOrderItem {
 
 export interface CreateOrderData {
   customerId: string;
+  providerId: string;
   source: OrderSource;
   items: CreateOrderItem[];
 }
 
 export const createOrder = async (data: CreateOrderData) => {
-  const { customerId, source, items } = data;
+  const { customerId, providerId, source, items } = data;
 
   // Calculate total amount (fetching prices from DB for security)
   const productIds = items.map((i) => i.productId);
@@ -36,9 +38,10 @@ export const createOrder = async (data: CreateOrderData) => {
     };
   });
 
-  return await prisma.order.create({
+  const order = await prisma.order.create({
     data: {
       customerId,
+      providerId,
       source,
       totalAmount,
       status: "DRAFT",
@@ -52,6 +55,11 @@ export const createOrder = async (data: CreateOrderData) => {
       customer: true,
     },
   });
+
+  // Notify via socket
+  notifyNewOrder(providerId, order);
+
+  return order;
 };
 
 export const getOrder = async (id: string) => {
@@ -78,10 +86,15 @@ export const getOrders = async () => {
 };
 
 export const updateOrderStatus = async (id: string, status: OrderStatus) => {
-  return await prisma.order.update({
+  const order = await prisma.order.update({
     where: { id },
     data: { status },
   });
+
+  // Notify status update
+  notifyStatusUpdate(order.providerId, order.id, status);
+
+  return order;
 };
 
 export const markAsInvoiced = async (id: string) => {

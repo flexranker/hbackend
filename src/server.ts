@@ -1,21 +1,26 @@
-import "dotenv/config";
-import { createApp } from "./app.js";
+import { createServer } from "node:http";
+import app from "./app.js";
 import { config } from "./config.js";
-import { initFirebase } from "./services/firebase.js";
+import { initNotificationService } from "./services/notifications.js";
 import logger from "./utils/logger.js";
 
-initFirebase();
+const httpServer = createServer(app);
 
-const app = createApp();
+// Initialize Socket.io via NotificationService
+initNotificationService(httpServer);
 
-const server = app.listen(config.port, () => {
-  logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
+httpServer.listen(config.port, () => {
+  logger.info(
+    `Server is running in ${config.nodeEnv} mode on port ${config.port}`,
+  );
+  logger.info(`Frontend URL: ${config.frontendUrl}`);
 });
 
-process.on("SIGTERM", () => {
-  logger.info("SIGTERM received, shutting down gracefully");
-  server.close(() => {
-    logger.info("Server closed");
-    process.exit(0);
-  });
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error({ promise, reason }, "Unhandled Rejection");
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error({ error }, "Uncaught Exception");
+  process.exit(1);
 });

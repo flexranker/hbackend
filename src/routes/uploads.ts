@@ -24,6 +24,9 @@ router.post(
     try {
       const { fileType, fileName, fileSizeBytes } = req.body;
       const uid = req.user?.uid;
+      if (!uid) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
       const result = await generateUploadUrl(uid, fileName, fileType, fileSizeBytes);
       res.json(result);
     } catch (err) {
