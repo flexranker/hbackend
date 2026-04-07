@@ -2,6 +2,7 @@ import { type NextFunction, type Request, type Response, Router } from "express"
 import { z } from "zod";
 import { requireAdmin } from "../middleware/admin.js";
 import { authenticate } from "../middleware/auth.js";
+import { userRateLimiter } from "../middleware/rateLimit.js";
 import { adminService } from "../services/admin.js";
 import { validateParams } from "../utils/validator.js";
 
@@ -26,6 +27,7 @@ const featurePostSchema = z.object({
 router.post(
   "/users/:id/ban",
   authenticate,
+  userRateLimiter,
   requireAdmin,
   validateParams(idParamSchema),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -41,6 +43,7 @@ router.post(
 router.post(
   "/users/:id/unban",
   authenticate,
+  userRateLimiter,
   requireAdmin,
   validateParams(idParamSchema),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -56,6 +59,7 @@ router.post(
 router.post(
   "/posts/:id/feature",
   authenticate,
+  userRateLimiter,
   requireAdmin,
   validateParams(idParamSchema),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -75,6 +79,7 @@ router.post(
 router.get(
   "/stats",
   authenticate,
+  userRateLimiter,
   requireAdmin,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
@@ -89,6 +94,7 @@ router.get(
 router.get(
   "/admins",
   authenticate,
+  userRateLimiter,
   requireAdmin,
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
@@ -103,6 +109,7 @@ router.get(
 router.post(
   "/admins/:uid",
   authenticate,
+  userRateLimiter,
   requireAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -118,6 +125,7 @@ router.post(
 router.delete(
   "/admins/:uid",
   authenticate,
+  userRateLimiter,
   requireAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

@@ -1,5 +1,6 @@
 import { type NextFunction, type Request, type Response, Router } from "express";
 import { authenticate } from "../middleware/auth.js";
+import { userRateLimiter } from "../middleware/rateLimit.js";
 import { postService } from "../services/posts.js";
 import {
   createPostSchema,
@@ -14,6 +15,7 @@ const router = Router();
 router.get(
   "/",
   authenticate,
+  userRateLimiter,
   validateQuery(listPostsSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -30,6 +32,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
+  userRateLimiter,
   validateParams(getPostSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -44,6 +47,7 @@ router.get(
 router.post(
   "/",
   authenticate,
+  userRateLimiter,
   validate(createPostSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     const reqID = req.user?.uid;
@@ -62,6 +66,7 @@ router.post(
 router.patch(
   "/:id",
   authenticate,
+  userRateLimiter,
   validateParams(getPostSchema),
   validate(updatePostSchema),
   async (req: Request, res: Response, next: NextFunction) => {
@@ -81,6 +86,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
+  userRateLimiter,
   validateParams(getPostSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {

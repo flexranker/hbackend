@@ -2,6 +2,7 @@ import { type NextFunction, type Request, type Response, Router } from "express"
 import { z } from "zod";
 import { requireAdmin } from "../middleware/admin.js";
 import { authenticate } from "../middleware/auth.js";
+import { userRateLimiter } from "../middleware/rateLimit.js";
 import { adminService } from "../services/admin.js";
 
 const router = Router();
@@ -15,6 +16,7 @@ const sendNotificationSchema = z.object({
 router.post(
   "/send-all",
   authenticate,
+  userRateLimiter,
   requireAdmin,
   async (req: Request, res: Response, next: NextFunction) => {
     try {

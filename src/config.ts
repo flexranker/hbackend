@@ -40,6 +40,10 @@ export const config = {
         .map((uid) => uid.trim())
         .filter(Boolean)
     : [],
+  rateLimit: {
+    ipMax: process.env.RATE_LIMIT_IP_MAX ? parseInt(process.env.RATE_LIMIT_IP_MAX, 10) : 300,
+    userMax: process.env.RATE_LIMIT_USER_MAX ? parseInt(process.env.RATE_LIMIT_USER_MAX, 10) : 100,
+  },
 };
 
 if (config.adminUids.length === 0) {

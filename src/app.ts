@@ -2,7 +2,7 @@ import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
 import { config } from "./config.js";
-import { rateLimiter } from "./middleware/rateLimit.js";
+import { ipRateLimiter } from "./middleware/rateLimit.js";
 import adminRouter from "./routes/admin.js";
 import notificationsRouter from "./routes/notifications.js";
 import postsRouter from "./routes/posts.js";
@@ -16,7 +16,7 @@ export function createApp() {
   app.use(helmet());
   app.use(cors({ origin: config.frontendUrl }));
   app.use(express.json({ limit: "50mb" }));
-  app.use(rateLimiter);
+  app.use(ipRateLimiter);
 
   app.use((req: Request, _res: Response, next: NextFunction) => {
     logger.info({ method: req.method, path: req.path });
