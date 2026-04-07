@@ -9,37 +9,23 @@ const { MessagingResponse } = twilio.twiml;
 
 export const handleWhatsAppWebhook = async (req: Request, res: Response) => {
   const { Body, From, MediaUrl0 } = req.body;
-  const phoneNumber = From.replace("whatsapp:", "");
+  const phoneNumber = From?.replace("whatsapp:", "") || "";
 
   try {
-    // 1. Fetch User Context
+    // 1. Fetch User Context (Optimized)
     const existingCustomer = await prisma.customer.findFirst({
       where: { phone: { contains: phoneNumber } },
       include: {
-        orders: {
-          take: 3,
-          orderBy: { createdAt: "desc" },
-          include: { items: { include: { product: true } } },
-        },
-        contractPrices: { include: { product: true } },
+        orders: { take: 2, orderBy: { createdAt: "desc" } },
       },
     });
 
     let userContext: any = {};
-    let dietaryNotes: any[] = [];
-
     if (existingCustomer) {
-      const orderIds = existingCustomer.orders.map((o) => o.id);
-      dietaryNotes = await prisma.dietaryNote.findMany({
-        where: { orderId: { in: orderIds } },
-      });
-
       userContext = {
         name: existingCustomer.name,
         companyName: existingCustomer.companyName,
         orderHistory: existingCustomer.orders,
-        contractPrices: existingCustomer.contractPrices,
-        dietaryNotes: dietaryNotes,
       };
     }
 
@@ -49,41 +35,37 @@ export const handleWhatsAppWebhook = async (req: Request, res: Response) => {
     const twiml = new MessagingResponse();
     let replyText = aiResponse.friendly_reply;
 
-    // 3. Automated Actions based on Intent
+    // 3. Automated Actions (Intent handling)
     
-    let finalCustomer = existingCustomer;
+    let finalCustomerId = existingCustomer?.id;
+    let finalCustomerName = existingCustomer?.name;
 
-    // A. Handle Registration
     if (aiResponse.intent === "REGISTRATION" && aiResponse.registrationData) {
       const name = aiResponse.registrationData.name || "New Customer";
-      const companyName = aiResponse.registrationData.companyName || "Unknown Company";
-      
       const newCustomer = await prisma.customer.create({
         data: {
           name,
-          companyName,
+          companyName: aiResponse.registrationData.companyName || "Unknown",
           phone: phoneNumber,
           email: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com`,
         },
       });
-      // @ts-ignore - simple mapping for the finalCustomer
-      finalCustomer = newCustomer;
-      replyText += `\n\n🎉 Welcome to Snap Order, ${newCustomer.name}! You are now registered under ${newCustomer.companyName}.`;
+      finalCustomerId = newCustomer.id;
+      finalCustomerName = newCustomer.name;
+      replyText += `\n\n🎉 Welcome, ${finalCustomerName}!`;
     }
 
-    // B. Handle Order Cancellation
     if (aiResponse.intent === "CANCEL" && aiResponse.targetOrderId) {
       await prisma.order.update({
         where: { id: aiResponse.targetOrderId },
         data: { status: "CANCELLED" },
       });
-      replyText += `\n\n🚫 Order ${aiResponse.targetOrderId.slice(0, 8)} has been cancelled.`;
+      replyText += `\n\n🚫 Order ${aiResponse.targetOrderId.slice(0, 8)} cancelled.`;
     }
 
-    // C. Handle Order Creation
-    if (aiResponse.intent === "ORDER" && finalCustomer && aiResponse.items.length > 0) {
+    if (aiResponse.intent === "ORDER" && finalCustomerId && aiResponse.items.length > 0) {
       const order = await orderService.createOrder({
-        customerId: finalCustomer.id,
+        customerId: finalCustomerId,
         providerId: "demo-provider-id",
         source: "WHATSAPP",
         status: "DRAFT",
@@ -94,7 +76,24 @@ export const handleWhatsAppWebhook = async (req: Request, res: Response) => {
             quantity: i.qty,
           })),
       });
-      replyText += `\n\n✅ Order Created! ID: ${order.id.slice(0, 8)}`;
+
+      // Handle Dietary Findings if present (Async)
+      if (aiResponse.dietaryFindings && aiResponse.dietaryFindings.length > 0) {
+        Promise.all(
+          aiResponse.dietaryFindings.map((f) =>
+            prisma.dietaryNote.create({
+              data: {
+                orderId: order.id,
+                label: f.label,
+                details: f.details,
+                isCritical: f.isCritical,
+              },
+            })
+          )
+        ).catch((err) => logger.error({ err }, "Async dietary save failed"));
+      }
+
+      replyText += `\n\n✅ Order Saved! ID: ${order.id.slice(0, 8)}`;
     }
 
     twiml.message(replyText);
@@ -102,7 +101,7 @@ export const handleWhatsAppWebhook = async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error({ error: error.message }, "WhatsApp Webhook failed");
     const twiml = new MessagingResponse();
-    twiml.message(`I'm having a technical glitch: ${error.message}. Please try again in a moment.`);
+    twiml.message(`Technical glitch: ${error.message}.`);
     res.type("text/xml").send(twiml.toString());
   }
 };

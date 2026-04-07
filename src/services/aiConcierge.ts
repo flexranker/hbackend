@@ -17,7 +17,8 @@ export interface ConciergeResponse {
   total_price?: number;
   friendly_reply: string;
   registrationData?: { name: string; companyName: string };
-  targetOrderId?: string; // For cancellations or updates
+  targetOrderId?: string;
+  dietaryFindings?: { label: string; details: string; isCritical: boolean }[];
 }
 
 export const processConciergeMessage = async (
@@ -35,20 +36,17 @@ export const processConciergeMessage = async (
       model: "gemini-3-flash-preview",
       systemInstruction: `
         You are an AI Concierge for Snap Order, a professional catering service.
-        You are talking to ${userContext.name || "a new customer"}.
+        Talking to: ${userContext.name || "a new customer"}.
         
-        USER CONTEXT:
-        - Customer Name: ${userContext.name || "Unknown"}
-        - Company: ${userContext.companyName || "Unknown"}
-        - Last 3 Orders: ${JSON.stringify(userContext.orderHistory || [])}
-        - Dietary Notes: ${JSON.stringify(userContext.dietaryNotes || [])}
-        - Special Discounts: ${JSON.stringify(userContext.contractPrices || [])}
+        CONTEXT:
+        - History: ${JSON.stringify(userContext.orderHistory || [])}
+        - Safety: ${JSON.stringify(userContext.dietaryNotes || [])}
 
         RULES:
-        1. REGISTRATION: If user is unknown, ask for their Full Name and Company Name. If they provide it, set intent to "REGISTRATION" and include registrationData.
-        2. CANCELLATION: If they want to cancel an order, identify the order ID from history. Set intent to "CANCEL" and include targetOrderId.
-        3. ORDERING: If they send an image or text order, extract items. If vague, use history. Set intent to "ORDER".
-        4. INQUIRY: If they ask about status, use the history provided to answer.
+        1. REGISTRATION: Ask for Name and Company if unknown. Intent: "REGISTRATION".
+        2. CANCELLATION: Identify order ID to cancel. Intent: "CANCEL".
+        3. ORDERING: Extract items. If vague, use history. Intent: "ORDER".
+        4. DIETARY: Scan message for allergies/preferences. If found, include in 'dietaryFindings'.
         5. Return a strictly formatted JSON object.
       `,
     });
@@ -63,7 +61,6 @@ export const processConciergeMessage = async (
           mimeType: fileData.mimeType,
         },
       });
-      parts.push({ text: "Analyze this media file for the request." });
     }
 
     const result = await model.generateContent({
@@ -75,12 +72,14 @@ export const processConciergeMessage = async (
 
     const parsed = JSON.parse(result.response.text());
 
-    // Resolve products for items
+    // Resolve products in parallel for speed
     if (parsed.intent === "ORDER" && parsed.items) {
-      for (const item of parsed.items) {
-        const resolved = await resolveProduct(item.name);
-        item.productId = resolved.productId;
-      }
+      await Promise.all(
+        parsed.items.map(async (item: any) => {
+          const resolved = await resolveProduct(item.name);
+          item.productId = resolved.productId;
+        })
+      );
     }
 
     return parsed as ConciergeResponse;
@@ -89,7 +88,7 @@ export const processConciergeMessage = async (
     return {
       intent: "INQUIRY",
       items: [],
-      friendly_reply: `I'm sorry, I'm having a technical glitch (${error.message}). Please try again or contact support.`,
+      friendly_reply: `Glitch: ${error.message}. Please try again.`,
     };
   }
 };
