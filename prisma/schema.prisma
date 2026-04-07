@@ -54,6 +54,8 @@ model Order {
   providerId     String
   zohoEstimateId String?
   zohoInvoiceId  String?
+  isFavorite     Boolean     @default(false)
+  notes          String?
   items          OrderItem[]
 
   createdAt    DateTime    @default(now())

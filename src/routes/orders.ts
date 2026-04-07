@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import * as orderService from "../services/orders.js";
+import { handleVagueOrder } from "../services/smartOrder.js";
 import { validate, validateParams } from "../utils/validator.js";
 
 const router = Router();
@@ -9,19 +10,44 @@ const createOrderSchema = z.object({
   customerId: z.string().uuid(),
   providerId: z.string().uuid(),
   source: z.enum(["WEB", "WHATSAPP", "EMAIL", "PHONE"]),
-  items: z.array(
-    z.object({
-      productId: z.string().uuid(),
-      quantity: z.number().int().positive(),
-    }),
-  ),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+      }),
+    )
+    .optional(),
+  notes: z.string().optional(),
 });
 
 const updateStatusSchema = z.object({
   status: z.enum(["DRAFT", "PENDING_APPROVAL", "CONFIRMED", "PREPARING", "DELIVERED"]),
 });
 
-router.post("/", validate(createOrderSchema), async (req, res, next) => {
+// Smart Order Manager Middleware
+const smartOrderManager = async (req: any, _res: any, next: any) => {
+  try {
+    const { customerId, source, items, notes } = req.body;
+
+    // Intercept vague WhatsApp orders
+    if (source === "WHATSAPP" && (!items || items.length === 0)) {
+      const suggestedItems = await handleVagueOrder(customerId, notes || null);
+      if (suggestedItems) {
+        req.body.items = suggestedItems;
+      } else {
+        return _res.status(400).json({ 
+          error: "Vague order detected but no previous history found to auto-fill items." 
+        });
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.post("/", validate(createOrderSchema), smartOrderManager, async (req, res, next) => {
   try {
     const order = await orderService.createOrder(req.body);
     res.status(201).json(order);
