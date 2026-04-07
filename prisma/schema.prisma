@@ -41,8 +41,13 @@ model Customer {
 model Product {
   id          String      @id @default(uuid())
   name        String
+  sku         String?     @unique
+  category    String?
   description String?
   price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
+  status      String      @default("Active")
+  supplier    String?
   orderItems  OrderItem[]
   contractPrices ContractPrice[]
   recipes     Recipe[]
@@ -59,7 +64,7 @@ model Order {
   customer     Customer    @relation(fields: [customerId], references: [id])
   customerId   String
   providerId     String
-  chefId         String?     // Assigned chef
+  chefId         String?
   zohoEstimateId String?
   zohoInvoiceId  String?
   isFavorite     Boolean     @default(false)
@@ -81,8 +86,8 @@ model OrderItem {
   id             String  @id @default(uuid())
   order          Order   @relation(fields: [orderId], references: [id])
   orderId        String
-  product        Product @relation(fields: [productId], references: [id])
-  productId      String
+  product        Product? @relation(fields: [productId], references: [id])
+  productId      String?
   quantity       Int
   cookedQuantity Int     @default(0)
   price          Decimal @db.Decimal(10, 2)
