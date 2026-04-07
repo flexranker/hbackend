@@ -36,6 +36,10 @@ export function createApp() {
     res.json({ status: "ok" });
   });
 
+  // Leapcell specific health checks
+  app.get("/kaithhealthcheck", (_req: Request, res: Response) => res.json({ status: "ok" }));
+  app.get("/kaithheathcheck", (_req: Request, res: Response) => res.json({ status: "ok" }));
+
   app.use("/api/users", usersRouter);
   app.use("/api/posts", postsRouter);
   app.use("/api/admin", adminRouter);
