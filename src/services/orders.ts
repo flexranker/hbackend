@@ -14,10 +14,24 @@ export interface CreateOrderData {
   source: OrderSource;
   items: CreateOrderItem[];
   notes?: string;
+  requiresManualIntervention?: boolean;
+  confidenceScore?: number;
+  extractedLocation?: string | null;
+  extractedTime?: string | null;
 }
 
 export const createOrder = async (data: CreateOrderData) => {
-  const { customerId, providerId, source, items, notes } = data;
+  const {
+    customerId,
+    providerId,
+    source,
+    items,
+    notes,
+    requiresManualIntervention,
+    confidenceScore,
+    extractedLocation,
+    extractedTime,
+  } = data;
 
   // Calculate total amount (fetching prices from DB for security)
   const productIds = items.map((i) => i.productId);
@@ -46,6 +60,10 @@ export const createOrder = async (data: CreateOrderData) => {
       providerId,
       source,
       notes,
+      requiresManualIntervention: requiresManualIntervention || false,
+      confidenceScore: confidenceScore || 1.0,
+      extractedLocation,
+      extractedTime,
       totalAmount,
       status: "DRAFT",
       isInvoiced: false,

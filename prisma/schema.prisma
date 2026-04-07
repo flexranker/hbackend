@@ -56,6 +56,10 @@ model Order {
   zohoInvoiceId  String?
   isFavorite     Boolean     @default(false)
   notes          String?
+  requiresManualIntervention Boolean @default(false)
+  confidenceScore            Float   @default(1.0)
+  extractedLocation          String?
+  extractedTime              String?
   items          OrderItem[]
 
   createdAt    DateTime    @default(now())
