@@ -25,7 +25,14 @@ const createOrderSchema = z.object({
 });
 
 const updateStatusSchema = z.object({
-  status: z.enum(["DRAFT", "PENDING_REVIEW", "PENDING_APPROVAL", "CONFIRMED", "PREPARING", "DELIVERED"]),
+  status: z.enum([
+    "DRAFT",
+    "PENDING_REVIEW",
+    "PENDING_APPROVAL",
+    "CONFIRMED",
+    "PREPARING",
+    "DELIVERED",
+  ]),
 });
 
 // Smart Order Manager Middleware (with AI Integration)
@@ -56,10 +63,10 @@ const smartOrderManager = async (req: any, _res: any, next: any) => {
                 productId: item.productId,
                 quantity: item.qty,
               }));
-            
+
             // If any item was unrecognized or needs confirmation, ensure manual intervention is flagged
             const hasUncertainItems = extracted.items.some(
-              (item) => item.status === "UNRECOGNIZED" || item.status === "NEEDS_CONFIRMATION"
+              (item) => item.status === "UNRECOGNIZED" || item.status === "NEEDS_CONFIRMATION",
             );
             if (hasUncertainItems) {
               req.body.requiresManualIntervention = true;
@@ -116,7 +123,7 @@ router.patch(
     try {
       const orderId = req.params.id;
       const originalOrder = await orderService.getOrder(orderId);
-      
+
       if (!originalOrder) {
         return res.status(404).json({ error: "Order not found" });
       }
@@ -130,7 +137,7 @@ router.patch(
 
       // Simple update: In real app, you'd handle item updates carefully
       const { items, ...orderData } = req.body;
-      
+
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: {

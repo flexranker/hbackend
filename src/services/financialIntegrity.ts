@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import prisma from "../lib/prisma.js";
 import logger from "../utils/logger.js";
-import { Server } from "socket.io";
+import type { Server } from "socket.io";
 
 let io: Server;
 
@@ -89,7 +89,9 @@ export const performReconciliation = async () => {
       const discrepancy = actualQty - expectedQty;
 
       if (discrepancy > 0) {
-        logger.warn(`Revenue Leakage detected for ${product.name}: ${discrepancy} units discrepancy.`);
+        logger.warn(
+          `Revenue Leakage detected for ${product.name}: ${discrepancy} units discrepancy.`,
+        );
 
         // 1. Create RevenueLeakage record
         await prisma.revenueLeakage.create({

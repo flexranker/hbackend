@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config.js";
 import prisma from "../lib/prisma.js";
 import logger from "../utils/logger.js";
-import { Server } from "socket.io";
+import type { Server } from "socket.io";
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 const model = genAI.getGenerativeModel({
@@ -54,8 +54,8 @@ export const scanForDietaryRequirements = async (orderId: string, rawText: strin
             details: finding.details,
             isCritical: finding.isCritical ?? true,
           },
-        })
-      )
+        }),
+      ),
     );
 
     // 2. Trigger ALERT_DIETARY via Socket.io if any are critical

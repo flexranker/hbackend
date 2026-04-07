@@ -15,28 +15,37 @@ const wastageSchema = z.object({
     z.object({
       ingredientId: z.string().uuid(),
       actualQty: z.number().nonnegative(),
-    })
+    }),
   ),
 });
 
-router.get("/:orderId/prediction", validateParams(z.object({ orderId: z.string().uuid() })), async (req, res, next) => {
-  try {
-    const prediction = await calculateExpectedUsage(req.params.orderId);
-    res.json(prediction);
-  } catch (error) {
-    next(error);
-  }
-});
+router.get(
+  "/:orderId/prediction",
+  validateParams(z.object({ orderId: z.string().uuid() })),
+  async (req, res, next) => {
+    try {
+      const prediction = await calculateExpectedUsage(req.params.orderId);
+      res.json(prediction);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-router.post("/:orderId/wastage", validateParams(z.object({ orderId: z.string().uuid() })), validate(wastageSchema), async (req, res, next) => {
-  try {
-    const { chefId, usages } = req.body;
-    const reports = await submitWastageReport(req.params.orderId, chefId, usages);
-    res.status(201).json(reports);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post(
+  "/:orderId/wastage",
+  validateParams(z.object({ orderId: z.string().uuid() })),
+  validate(wastageSchema),
+  async (req, res, next) => {
+    try {
+      const { chefId, usages } = req.body;
+      const reports = await submitWastageReport(req.params.orderId, chefId, usages);
+      res.status(201).json(reports);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 router.get("/analytics/wastage-trends", async (_req, res, next) => {
   try {

@@ -57,7 +57,7 @@ export const calculateExpectedUsage = async (orderId: string): Promise<Ingredien
 export const submitWastageReport = async (
   orderId: string,
   chefId: string,
-  usages: { ingredientId: string; actualQty: number }[]
+  usages: { ingredientId: string; actualQty: number }[],
 ) => {
   const expectedUsages = await calculateExpectedUsage(orderId);
   const expectedMap = new Map(expectedUsages.map((u) => [u.ingredientId, u.expectedQty]));
@@ -77,7 +77,7 @@ export const submitWastageReport = async (
           wastage: wastage,
         },
       });
-    })
+    }),
   );
 
   return reports;

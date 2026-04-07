@@ -35,8 +35,8 @@ export const optimizePrompt = async () => {
       take: 5,
       orderBy: { fieldsCorrected: "desc" },
       include: {
-        order: true
-      }
+        order: true,
+      },
     });
 
     if (frequentMistakes.length === 0) {
@@ -46,11 +46,11 @@ export const optimizePrompt = async () => {
 
     // 2. Build Few-Shot Examples block
     let fewShotBlock = "\n\n### LEARNING FROM PREVIOUS MISTAKES (Few-Shot Examples):\n";
-    
+
     for (const entry of frequentMistakes) {
       const original = JSON.stringify(entry.originalAiData);
       const corrected = JSON.stringify(entry.adminCorrectedData);
-      
+
       fewShotBlock += `
       Mistake Case:
       - AI originally extracted: ${original}
