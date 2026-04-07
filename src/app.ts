@@ -8,6 +8,7 @@ import adminRouter from "./routes/admin.js";
 import adminAnalyticsRouter from "./routes/adminAnalytics.js";
 import aiIngestRouter from "./routes/aiIngest.js";
 import customersRouter from "./routes/customers.js";
+import kitchenRouter from "./routes/kitchen.js";
 import notificationsRouter from "./routes/notifications.js";
 import ordersRouter from "./routes/orders.js";
 import postsRouter from "./routes/posts.js";
@@ -43,6 +44,7 @@ export function createApp() {
   app.use("/api/uploads", uploadsRouter);
   app.use("/api/orders", ordersRouter);
   app.use("/api/v1/orders", aiIngestRouter);
+  app.use("/api/kitchen", kitchenRouter);
   app.use("/api/customers", customersRouter);
   app.use("/api/products", productsRouter);
 

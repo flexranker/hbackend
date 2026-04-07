@@ -47,6 +47,9 @@ export const config = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || "",
   },
+  auth: {
+    jwtSecret: process.env.JWT_SECRET || "default-secret-change-me",
+  },
   zoho: {
     orgId: process.env.ZOHO_ORG_ID || "",
     authToken: process.env.ZOHO_AUTH_TOKEN || "",

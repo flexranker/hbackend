@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import * as orderService from "../services/orders.js";
 import { extractOrderData } from "../services/aiExtractor.js";
+import { scanForDietaryRequirements } from "../services/dietarySafety.js";
 import { validate } from "../utils/validator.js";
 
 const router = Router();
@@ -42,6 +43,13 @@ router.post("/ingest-ai", validate(aiIngestSchema), async (req, res, next) => {
           quantity: item.qty,
         })),
     });
+
+    // Post-processing: Scan for Dietary Requirements (Allergies/Preferences)
+    if (inputType === "text") {
+      scanForDietaryRequirements(order.id, inputData).catch((err) =>
+        console.error(`[Dietary Safety] Scan failed for order ${order.id}:`, err.message),
+      );
+    }
 
     res.status(201).json(order);
   } catch (error) {

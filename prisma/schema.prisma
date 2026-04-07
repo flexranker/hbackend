@@ -44,6 +44,7 @@ model Product {
   price       Decimal     @db.Decimal(10, 2)
   orderItems  OrderItem[]
   contractPrices ContractPrice[]
+  recipes     Recipe[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -57,6 +58,7 @@ model Order {
   customer     Customer    @relation(fields: [customerId], references: [id])
   customerId   String
   providerId     String
+  chefId         String?     // Assigned chef
   zohoEstimateId String?
   zohoInvoiceId  String?
   isFavorite     Boolean     @default(false)
@@ -67,6 +69,8 @@ model Order {
   extractedTime              String?
   items          OrderItem[]
   corrections    CorrectionLedger[]
+  dietaryNotes   DietaryNote[]
+  wastageReports WastageReport[]
 
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -81,6 +85,38 @@ model OrderItem {
   quantity       Int
   cookedQuantity Int     @default(0)
   price          Decimal @db.Decimal(10, 2)
+}
+
+model Ingredient {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  unit      String   // e.g., "kg", "liters", "units"
+  recipes   Recipe[]
+  wastageReports WastageReport[]
+}
+
+model Recipe {
+  id           String     @id @default(uuid())
+  product      Product    @relation(fields: [productId], references: [id])
+  productId    String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  quantityPerUnit Decimal @db.Decimal(10, 3) // e.g., 0.250 kg per biryani
+
+  @@unique([productId, ingredientId])
+}
+
+model WastageReport {
+  id           String     @id @default(uuid())
+  order        Order      @relation(fields: [orderId], references: [id])
+  orderId      String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  chefId       String
+  expectedQty  Decimal    @db.Decimal(10, 3)
+  actualQty    Decimal    @db.Decimal(10, 3)
+  wastage      Decimal    @db.Decimal(10, 3)
+  createdAt    DateTime   @default(now())
 }
 
 model ContractPrice {
@@ -101,8 +137,8 @@ model RevenueLeakage {
   date        DateTime @default(now())
   productId   String
   productName String
-  expectedQty Int      @default(0) // Invoiced
-  actualQty   Int      @default(0) // Cooked
+  expectedQty Int      @default(0)
+  actualQty   Int      @default(0)
   discrepancy Int      @default(0)
   resolved    Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -116,6 +152,16 @@ model CorrectionLedger {
   adminCorrectedData  Json
   fieldsCorrected     Int      @default(0)
   createdAt           DateTime @default(now())
+}
+
+model DietaryNote {
+  id          String   @id @default(uuid())
+  order       Order    @relation(fields: [orderId], references: [id])
+  orderId     String
+  label       String
+  details     String?
+  isCritical  Boolean  @default(true)
+  createdAt   DateTime @default(now())
 }
 
 model AuditLog {

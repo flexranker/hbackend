@@ -3,9 +3,7 @@ import prisma from "../lib/prisma.js";
 import logger from "../utils/logger.js";
 
 const simulateWhatsAppNudge = async (orderId: string, status: string, customerName: string) => {
-  logger.info(
-    `[WhatsApp Nudge] Order ${orderId} (${status}) for ${customerName} has been stuck for > 4h.`,
-  );
+  logger.info(`[WhatsApp Nudge] Order ${orderId} (${status}) for ${customerName} has been stuck for > 4h.`);
 };
 
 export const initNudgeSystem = () => {

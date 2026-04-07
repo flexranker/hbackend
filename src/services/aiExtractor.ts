@@ -6,9 +6,7 @@ import { resolveProduct, type ResolvedProduct } from "../utils/productResolver.j
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
-  systemInstruction: `
+let systemInstruction = `
     You are an AI order extractor for a corporate catering system.
     Extract the following information from the provided text, image, or audio and return it as a strictly formatted JSON object.
     
@@ -21,8 +19,12 @@ const model = genAI.getGenerativeModel({
     - If a quantity is not explicitly mentioned but the item is, assume 1.
     - If the input is "Same as last time" or similar, return empty items array.
     - Only include items that are clearly food or beverage products.
-  `,
-});
+`;
+
+export const setSystemPrompt = (newPrompt: string) => {
+  systemInstruction = newPrompt;
+  logger.info("AIExtractorService: System prompt updated.");
+};
 
 export interface AIExtractedItem extends ResolvedProduct {
   qty: number;
@@ -48,6 +50,11 @@ export const extractOrderData = async (
   type: "text" | "image" | "audio" = "text",
 ): Promise<AIExtractedOrder> => {
   try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction,
+    });
+
     let parts: any[] = [];
 
     if (type === "text") {

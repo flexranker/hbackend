@@ -4,6 +4,8 @@ import { config } from "./config.js";
 import { initNotificationService } from "./services/notifications.js";
 import { initNudgeSystem } from "./services/nudge.js";
 import { initFinancialIntegrityService } from "./services/financialIntegrity.js";
+import { initDietarySafetyService } from "./services/dietarySafety.js";
+import { initPromptOptimizer } from "./services/promptOptimizer.js";
 import logger from "./utils/logger.js";
 
 const httpServer = createServer(app);
@@ -16,6 +18,12 @@ initNudgeSystem();
 
 // Initialize Financial Integrity Service
 initFinancialIntegrityService(io);
+
+// Initialize Dietary Safety Service
+initDietarySafetyService(io);
+
+// Initialize Prompt Optimizer (Self-Improving Loop)
+initPromptOptimizer();
 
 httpServer.listen(config.port, () => {
   logger.info(`Server is running in ${config.nodeEnv} mode on port ${config.port}`);
