@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { getFirebaseAdmin } from "./firebase.js";
 import { getStorage } from "firebase-admin/storage";
+import { getFirebaseAdmin } from "./firebase.js";
 
 export async function generateUploadUrl(
   uid: string,
   fileName: string,
   fileType: string,
-  fileSizeBytes: number
+  fileSizeBytes: number,
 ): Promise<{ uploadUrl: string; storagePath: string }> {
   const bucket = getStorage(getFirebaseAdmin()).bucket();
   const ext = fileName.split(".").pop() ?? "bin";

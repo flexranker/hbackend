@@ -64,9 +64,7 @@ export const adminService = {
 
   async removeAdminUid(uid: string): Promise<void> {
     if (config.adminUids.includes(uid)) {
-      throw new ForbiddenError(
-        "Cannot remove a bootstrap admin via API. Edit ADMIN_UIDS in .env.",
-      );
+      throw new ForbiddenError("Cannot remove a bootstrap admin via API. Edit ADMIN_UIDS in .env.");
     }
 
     const docRef = db.collection("_admin").doc("config");

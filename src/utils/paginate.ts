@@ -1,5 +1,5 @@
-import type { PaginatedResponse } from "../types/api.js";
 import { getFirestoreDb } from "../services/firebase.js";
+import type { PaginatedResponse } from "../types/api.js";
 
 /**
  * Standard pagination for Firestore collections using cursors.
@@ -31,12 +31,7 @@ export async function paginateCollection<T>(
 /**
  * @deprecated Use paginateCollection for cursor-based pagination.
  */
-export function paginate<T>(
-  data: T[],
-  limit: number,
-  page: number,
-  total: number,
-): any {
+export function paginate<T>(data: T[], limit: number, page: number, total: number): any {
   return {
     data,
     pagination: {

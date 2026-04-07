@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.js";
 import { userRateLimiter } from "../middleware/rateLimit.js";
-import { validate } from "../utils/validator.js";
-import { uploadSchema } from "../types/api.js";
 import { generateUploadUrl } from "../services/uploads.js";
+import { uploadSchema } from "../types/api.js";
+import { validate } from "../utils/validator.js";
 
 const router = Router();
 
@@ -23,13 +23,13 @@ router.post(
   async (req, res, next) => {
     try {
       const { fileType, fileName, fileSizeBytes } = req.body;
-      const uid = req.user!.uid;
+      const uid = req.user?.uid;
       const result = await generateUploadUrl(uid, fileName, fileType, fileSizeBytes);
       res.json(result);
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 export default router;

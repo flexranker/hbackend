@@ -5,8 +5,11 @@ import helmet from "helmet";
 import { config } from "./config.js";
 import { ipRateLimiter } from "./middleware/rateLimit.js";
 import adminRouter from "./routes/admin.js";
+import customersRouter from "./routes/customers.js";
 import notificationsRouter from "./routes/notifications.js";
+import ordersRouter from "./routes/orders.js";
 import postsRouter from "./routes/posts.js";
+import productsRouter from "./routes/products.js";
 import uploadsRouter from "./routes/uploads.js";
 import usersRouter from "./routes/users.js";
 import { AppError } from "./utils/errors.js";
@@ -34,6 +37,9 @@ export function createApp() {
   app.use("/api/admin", adminRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/uploads", uploadsRouter);
+  app.use("/api/orders", ordersRouter);
+  app.use("/api/customers", customersRouter);
+  app.use("/api/products", productsRouter);
 
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof AppError) {
