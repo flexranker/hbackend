@@ -1,6 +1,6 @@
-import type { Request, Response, NextFunction } from 'express';
-import { getFirebaseAuth } from '../services/firebase.js';
-import { AuthError } from '../utils/errors.js';
+import type { NextFunction, Request, Response } from "express";
+import { getFirebaseAuth } from "../services/firebase.js";
+import { AuthError } from "../utils/errors.js";
 
 export interface AuthenticatedUser {
   uid: string;
@@ -18,11 +18,11 @@ declare global {
   }
 }
 
-export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  
+export const authenticate = async (req: Request, _res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+
   if (!token) {
-    return next(new AuthError('No token provided'));
+    return next(new AuthError("No token provided"));
   }
 
   try {
@@ -36,6 +36,6 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     };
     next();
   } catch {
-    next(new AuthError('Invalid token'));
+    next(new AuthError("Invalid token"));
   }
 };

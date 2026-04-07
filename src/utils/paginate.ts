@@ -1,10 +1,10 @@
-import type { PaginatedResponse } from '../types/db.js';
+import type { PaginatedResponse } from "../types/db.js";
 
 export function paginate<T>(
   data: T[],
   limit: number,
   page: number,
-  total: number
+  total: number,
 ): PaginatedResponse<T> {
   return {
     data,

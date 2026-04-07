@@ -1,5 +1,5 @@
-import { getFirestoreDb } from './firebase.js';
-import { NotFoundError, ForbiddenError } from '../utils/errors.js';
+import { NotFoundError } from "../utils/errors.js";
+import { getFirestoreDb } from "./firebase.js";
 
 interface UserRecord {
   id: string;
@@ -28,11 +28,11 @@ const db = getFirestoreDb();
 
 export const adminService = {
   async banUser(userId: string, reason?: string): Promise<UserRecord> {
-    const userRef = db.collection('users').doc(userId);
+    const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
-      throw new NotFoundError('User not found');
+      throw new NotFoundError("User not found");
     }
 
     const updateData: Record<string, unknown> = {
@@ -49,11 +49,11 @@ export const adminService = {
   },
 
   async unbanUser(userId: string): Promise<UserRecord> {
-    const userRef = db.collection('users').doc(userId);
+    const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
-      throw new NotFoundError('User not found');
+      throw new NotFoundError("User not found");
     }
 
     await userRef.update({
@@ -66,11 +66,11 @@ export const adminService = {
   },
 
   async featurePost(postId: string): Promise<PostRecord> {
-    const postRef = db.collection('posts').doc(postId);
+    const postRef = db.collection("posts").doc(postId);
     const postDoc = await postRef.get();
 
     if (!postDoc.exists) {
-      throw new NotFoundError('Post not found');
+      throw new NotFoundError("Post not found");
     }
 
     await postRef.update({
@@ -83,11 +83,11 @@ export const adminService = {
   },
 
   async unfeaturePost(postId: string): Promise<PostRecord> {
-    const postRef = db.collection('posts').doc(postId);
+    const postRef = db.collection("posts").doc(postId);
     const postDoc = await postRef.get();
 
     if (!postDoc.exists) {
-      throw new NotFoundError('Post not found');
+      throw new NotFoundError("Post not found");
     }
 
     await postRef.update({
@@ -100,10 +100,10 @@ export const adminService = {
 
   async getStats(): Promise<Stats> {
     const [usersSnapshot, postsSnapshot, bannedSnapshot, featuredSnapshot] = await Promise.all([
-      db.collection('users').count().get(),
-      db.collection('posts').count().get(),
-      db.collection('users').where('banned', '==', true).count().get(),
-      db.collection('posts').where('featured', '==', true).count().get(),
+      db.collection("users").count().get(),
+      db.collection("posts").count().get(),
+      db.collection("users").where("banned", "==", true).count().get(),
+      db.collection("posts").where("featured", "==", true).count().get(),
     ]);
 
     return {
@@ -114,8 +114,12 @@ export const adminService = {
     };
   },
 
-  async sendNotificationToAll(title: string, body: string, data?: Record<string, string>): Promise<{ sent: number }> {
-    const usersSnapshot = await db.collection('users').get();
+  async sendNotificationToAll(
+    title: string,
+    body: string,
+    data?: Record<string, string>,
+  ): Promise<{ sent: number }> {
+    const usersSnapshot = await db.collection("users").get();
     const BATCH_SIZE = 500;
     const notificationData = {
       title,
@@ -133,7 +137,11 @@ export const adminService = {
       const batch = db.batch();
 
       for (const userDoc of chunk) {
-        const notificationRef = db.collection('users').doc(userDoc.id).collection('notifications').doc();
+        const notificationRef = db
+          .collection("users")
+          .doc(userDoc.id)
+          .collection("notifications")
+          .doc();
         batch.set(notificationRef, notificationData);
       }
 
