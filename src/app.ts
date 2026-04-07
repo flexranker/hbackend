@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
@@ -34,11 +35,37 @@ export function createApp() {
 
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof AppError) {
-      res.status(err.statusCode).json({ error: err.message, code: err.code });
-    } else {
-      logger.error({ err, path: req.path });
-      res.status(500).json({ error: "Internal server error" });
+      if (err.statusCode >= 500) {
+        logger.error({ err, path: req.path });
+      } else {
+        logger.warn({ err, path: req.path, statusCode: err.statusCode });
+      }
+      return res.status(err.statusCode).json({ error: err.message, code: err.code });
     }
+
+    const errorId = randomUUID();
+
+    logger.error({
+      errorId,
+      err,
+      path: req.path,
+      method: req.method,
+      userId: req.user?.uid ?? null,
+    });
+
+    if (config.nodeEnv === "development") {
+      return res.status(500).json({
+        error: "Internal server error",
+        errorId,
+        detail: err.message,
+        stack: err.stack,
+      });
+    }
+
+    return res.status(500).json({
+      error: "Internal server error",
+      errorId,
+    });
   });
 
   return app;
