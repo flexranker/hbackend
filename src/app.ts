@@ -7,6 +7,7 @@ import { ipRateLimiter } from "./middleware/rateLimit.js";
 import adminRouter from "./routes/admin.js";
 import adminAnalyticsRouter from "./routes/adminAnalytics.js";
 import aiIngestRouter from "./routes/aiIngest.js";
+import webhooksRouter from "./routes/webhooks.js";
 import customersRouter from "./routes/customers.js";
 import kitchenRouter from "./routes/kitchen.js";
 import notificationsRouter from "./routes/notifications.js";
@@ -44,6 +45,7 @@ export function createApp() {
   app.use("/api/posts", postsRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/v1/admin/analytics", adminAnalyticsRouter);
+  app.use("/api/v1/webhooks", webhooksRouter);
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/uploads", uploadsRouter);
   app.use("/api/orders", ordersRouter);
