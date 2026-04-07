@@ -30,7 +30,7 @@ export const processConciergeMessage = async (
 
     const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash-latest",
       systemInstruction: `
         You are an AI Concierge for Baron Kitchen, a professional catering service.
         You are talking to ${userContext.name || "a new customer"}.
