@@ -13,7 +13,7 @@ export const handleWhatsAppWebhook = async (req: Request, res: Response) => {
 
   try {
     // 1. Fetch User Context
-    const customer = await prisma.customer.findFirst({
+    const existingCustomer = await prisma.customer.findFirst({
       where: { phone: { contains: phoneNumber } },
       include: {
         orders: {
@@ -28,19 +28,18 @@ export const handleWhatsAppWebhook = async (req: Request, res: Response) => {
     let userContext: any = {};
     let dietaryNotes: any[] = [];
 
-    if (customer) {
-      // Fetch dietary notes for this customer's orders
-      const orderIds = customer.orders.map(o => o.id);
+    if (existingCustomer) {
+      const orderIds = existingCustomer.orders.map((o) => o.id);
       dietaryNotes = await prisma.dietaryNote.findMany({
-        where: { orderId: { in: orderIds } }
+        where: { orderId: { in: orderIds } },
       });
 
       userContext = {
-        name: customer.name,
-        companyName: customer.companyName,
-        orderHistory: customer.orders,
-        contractPrices: customer.contractPrices,
-        dietaryNotes: dietaryNotes
+        name: existingCustomer.name,
+        companyName: existingCustomer.companyName,
+        orderHistory: existingCustomer.orders,
+        contractPrices: existingCustomer.contractPrices,
+        dietaryNotes: dietaryNotes,
       };
     }
 
@@ -50,25 +49,55 @@ export const handleWhatsAppWebhook = async (req: Request, res: Response) => {
     const twiml = new MessagingResponse();
     let replyText = aiResponse.friendly_reply;
 
-    // 3. Handle Order Intent
-    if (aiResponse.intent === "ORDER" && customer && aiResponse.items.length > 0) {
+    // 3. Automated Actions based on Intent
+    
+    let finalCustomer = existingCustomer;
+
+    // A. Handle Registration
+    if (aiResponse.intent === "REGISTRATION" && aiResponse.registrationData) {
+      const name = aiResponse.registrationData.name || "New Customer";
+      const companyName = aiResponse.registrationData.companyName || "Unknown Company";
+      
+      const newCustomer = await prisma.customer.create({
+        data: {
+          name,
+          companyName,
+          phone: phoneNumber,
+          email: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com`,
+        },
+      });
+      // @ts-ignore - simple mapping for the finalCustomer
+      finalCustomer = newCustomer;
+      replyText += `\n\n🎉 Welcome to Snap Order, ${newCustomer.name}! You are now registered under ${newCustomer.companyName}.`;
+    }
+
+    // B. Handle Order Cancellation
+    if (aiResponse.intent === "CANCEL" && aiResponse.targetOrderId) {
+      await prisma.order.update({
+        where: { id: aiResponse.targetOrderId },
+        data: { status: "CANCELLED" },
+      });
+      replyText += `\n\n🚫 Order ${aiResponse.targetOrderId.slice(0, 8)} has been cancelled.`;
+    }
+
+    // C. Handle Order Creation
+    if (aiResponse.intent === "ORDER" && finalCustomer && aiResponse.items.length > 0) {
       const order = await orderService.createOrder({
-        customerId: customer.id,
-        providerId: "demo-provider-id", // In real app, derived from context
+        customerId: finalCustomer.id,
+        providerId: "demo-provider-id",
         source: "WHATSAPP",
         status: "DRAFT",
         items: aiResponse.items
-          .filter(i => i.productId)
-          .map(i => ({
+          .filter((i) => i.productId)
+          .map((i) => ({
             productId: i.productId as string,
-            quantity: i.qty
-          }))
+            quantity: i.qty,
+          })),
       });
       replyText += `\n\n✅ Order Created! ID: ${order.id.slice(0, 8)}`;
     }
 
     twiml.message(replyText);
-
     res.type("text/xml").send(twiml.toString());
   } catch (error: any) {
     logger.error({ error: error.message }, "WhatsApp Webhook failed");

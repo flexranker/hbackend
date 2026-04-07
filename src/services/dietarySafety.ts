@@ -1,12 +1,12 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { Server } from "socket.io";
 import { config } from "../config.js";
 import prisma from "../lib/prisma.js";
 import logger from "../utils/logger.js";
-import type { Server } from "socket.io";
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
+  model: "gemini-3-flash-preview",
   systemInstruction: `
     You are a Dietary Safety Officer.
     Analyze the provided text for:

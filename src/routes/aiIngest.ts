@@ -37,8 +37,8 @@ router.post("/ingest-ai", validate(aiIngestSchema), async (req, res, next) => {
       extractedLocation: extracted.location,
       extractedTime: extracted.delivery_time,
       items: extracted.items
-        .filter((item) => item.productId !== null)
-        .map((item) => ({
+        .filter((item: any) => item.productId !== null)
+        .map((item: any) => ({
           productId: item.productId as string,
           quantity: item.qty,
         })),

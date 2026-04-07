@@ -12,10 +12,12 @@ async function fetchRemoteFile(url: string): Promise<{ data: string; mimeType: s
 }
 
 export interface ConciergeResponse {
-  intent: "ORDER" | "INQUIRY" | "UPDATE" | "REGISTRATION";
+  intent: "ORDER" | "INQUIRY" | "UPDATE" | "REGISTRATION" | "CANCEL";
   items: { name: string; qty: number; productId?: string | null }[];
   total_price?: number;
   friendly_reply: string;
+  registrationData?: { name: string; companyName: string };
+  targetOrderId?: string; // For cancellations or updates
 }
 
 export const processConciergeMessage = async (
@@ -30,9 +32,9 @@ export const processConciergeMessage = async (
 
     const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-3-flash-preview",
       systemInstruction: `
-        You are an AI Concierge for Baron Kitchen, a professional catering service.
+        You are an AI Concierge for Snap Order, a professional catering service.
         You are talking to ${userContext.name || "a new customer"}.
         
         USER CONTEXT:
@@ -43,11 +45,11 @@ export const processConciergeMessage = async (
         - Special Discounts: ${JSON.stringify(userContext.contractPrices || [])}
 
         RULES:
-        1. If the user is unknown (no name/company), politely ask for their Company Name to register them. Set intent to "REGISTRATION".
-        2. If they send an image, analyze it as a food order or menu.
-        3. If they are vague (e.g., "Same as last time"), use their history to suggest an order.
-        4. If they place an order, set intent to "ORDER".
-        5. Return a strictly formatted JSON object with: intent, items (name, qty), total_price (optional), and friendly_reply.
+        1. REGISTRATION: If user is unknown, ask for their Full Name and Company Name. If they provide it, set intent to "REGISTRATION" and include registrationData.
+        2. CANCELLATION: If they want to cancel an order, identify the order ID from history. Set intent to "CANCEL" and include targetOrderId.
+        3. ORDERING: If they send an image or text order, extract items. If vague, use history. Set intent to "ORDER".
+        4. INQUIRY: If they ask about status, use the history provided to answer.
+        5. Return a strictly formatted JSON object.
       `,
     });
 
@@ -61,7 +63,7 @@ export const processConciergeMessage = async (
           mimeType: fileData.mimeType,
         },
       });
-      parts.push({ text: "Analyze this media file for the order." });
+      parts.push({ text: "Analyze this media file for the request." });
     }
 
     const result = await model.generateContent({

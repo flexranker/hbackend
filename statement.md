@@ -2,7 +2,7 @@ rder management system
 Overview
 How might we design a centralized, intelligent, and scalable order management system that ensures 100% order capture across multiple channels—including website—while eliminating revenue leakage and minimizing manual dependency?
 
-The corporate catering industry operates in a fast-paced environment where timely and accurate order processing is critical. Companies like Baron Kitchen handle daily food orders from corporate clients, requiring seamless coordination between order intake, kitchen operations, and billing.
+The corporate catering industry operates in a fast-paced environment where timely and accurate order processing is critical. Companies like Snap Order handle daily food orders from corporate clients, requiring seamless coordination between order intake, kitchen operations, and billing.
 
 Currently, orders are received through multiple fragmented channels such as telephonic calls, emails, and WhatsApp messages. While flexible, this leads to operational gaps—especially for urgent or after-hours orders—which are sometimes executed without proper recording, resulting in missed entries and revenue leakage.
 

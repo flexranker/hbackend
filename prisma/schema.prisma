@@ -15,6 +15,7 @@ enum OrderStatus {
   CONFIRMED
   PREPARING
   DELIVERED
+  CANCELLED
 }
 
 enum OrderSource {

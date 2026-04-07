@@ -58,15 +58,15 @@ const smartOrderManager = async (req: any, _res: any, next: any) => {
           // Map AI extracted items to real product IDs where possible
           if (!req.body.items && extracted.items.length > 0) {
             req.body.items = extracted.items
-              .filter((item) => item.productId !== null)
-              .map((item) => ({
+              .filter((item: any) => item.productId !== null)
+              .map((item: any) => ({
                 productId: item.productId,
                 quantity: item.qty,
               }));
 
             // If any item was unrecognized or needs confirmation, ensure manual intervention is flagged
             const hasUncertainItems = extracted.items.some(
-              (item) => item.status === "UNRECOGNIZED" || item.status === "NEEDS_CONFIRMATION",
+              (item: any) => item.status === "UNRECOGNIZED" || item.status === "NEEDS_CONFIRMATION",
             );
             if (hasUncertainItems) {
               req.body.requiresManualIntervention = true;
