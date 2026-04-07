@@ -73,7 +73,7 @@ export const handleWhatsAppWebhook = async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error({ error: error.message }, "WhatsApp Webhook failed");
     const twiml = new MessagingResponse();
-    twiml.message("I'm having a technical glitch. Please try again in a moment.");
+    twiml.message(`I'm having a technical glitch: ${error.message}. Please try again in a moment.`);
     res.type("text/xml").send(twiml.toString());
   }
 };
