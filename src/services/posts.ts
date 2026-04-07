@@ -1,6 +1,7 @@
-import type { PaginatedResponse, Post } from "../types/db.js";
+import type { PaginatedResponse } from "../types/api.js";
+import type { Post } from "../types/db.js";
 import { NotFoundError } from "../utils/errors.js";
-import { getOffset, paginate } from "../utils/paginate.js";
+import { paginateCollection } from "../utils/paginate.js";
 import { getFirestoreDb } from "./firebase.js";
 
 const COLLECTION = "posts";
@@ -17,14 +18,15 @@ export const postService = {
     return { id: doc.id, ...doc.data() } as Post;
   },
 
-  async list(limit: number, page: number): Promise<PaginatedResponse<Post>> {
+  /**
+   * @deprecated Use getPostsPage for cursor-based pagination.
+   */
+  async list(limit: number, page: number): Promise<any> {
     const db = getFirestoreDb();
-    const offset = getOffset(limit, page);
-
     const snapshot = await db
       .collection(COLLECTION)
       .orderBy("createdAt", "desc")
-      .offset(offset)
+      .offset((page - 1) * limit)
       .limit(limit)
       .get();
 
@@ -33,7 +35,21 @@ export const postService = {
 
     const posts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Post);
 
-    return paginate(posts, limit, page, total);
+    return {
+      data: posts,
+      pagination: {
+        limit,
+        page,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  },
+
+  async getPostsPage(limit: number, after?: string): Promise<PaginatedResponse<Post>> {
+    const db = getFirestoreDb();
+    const query = db.collection(COLLECTION).orderBy("createdAt", "desc");
+    return paginateCollection<Post>(query, COLLECTION, limit, after);
   },
 
   async create(authorId: string, data: { title: string; content: string }): Promise<Post> {

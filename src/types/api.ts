@@ -45,3 +45,15 @@ export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 export type ListPostsInput = z.infer<typeof listPostsSchema>;
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  total?: number; // optional, only if cheap to compute
+}
+
+export const paginationQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  after: z.string().optional(), // cursor — the ID of the last item on the previous page
+});

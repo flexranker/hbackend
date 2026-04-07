@@ -5,10 +5,10 @@ import { postService } from "../services/posts.js";
 import {
   createPostSchema,
   getPostSchema,
-  listPostsSchema,
+  paginationQuerySchema,
   updatePostSchema,
 } from "../types/api.js";
-import { validate, validateParams, validateQuery } from "../utils/validator.js";
+import { validate, validateParams } from "../utils/validator.js";
 
 const router = Router();
 
@@ -16,15 +16,13 @@ router.get(
   "/",
   authenticate,
   userRateLimiter,
-  validateQuery(listPostsSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const limit = parseInt(req.query.limit as string, 10) || 10;
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const posts = await postService.list(limit, page);
-      res.json(posts);
-    } catch (error) {
-      next(error);
+      const { limit, after } = paginationQuerySchema.parse(req.query);
+      const result = await postService.getPostsPage(limit, after);
+      res.json(result); // shape: { items, nextCursor, hasMore }
+    } catch (err) {
+      next(err);
     }
   },
 );
