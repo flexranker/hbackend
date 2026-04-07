@@ -7,6 +7,7 @@ import { ipRateLimiter } from "./middleware/rateLimit.js";
 import adminRouter from "./routes/admin.js";
 import notificationsRouter from "./routes/notifications.js";
 import postsRouter from "./routes/posts.js";
+import uploadsRouter from "./routes/uploads.js";
 import usersRouter from "./routes/users.js";
 import { AppError } from "./utils/errors.js";
 import logger from "./utils/logger.js";
@@ -32,6 +33,7 @@ export function createApp() {
   app.use("/api/posts", postsRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/notifications", notificationsRouter);
+  app.use("/api/uploads", uploadsRouter);
 
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof AppError) {

@@ -51,4 +51,11 @@ export function getFirestoreDb(): Firestore {
   return db;
 }
 
+export function getFirebaseAdmin(): App {
+  if (!app) {
+    initFirebase();
+  }
+  return app;
+}
+
 export { app, auth, db };

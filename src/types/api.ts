@@ -29,6 +29,12 @@ export const getPostSchema = z.object({
   id: z.string(),
 });
 
+export const uploadSchema = z.object({
+  fileType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+  fileName: z.string().min(1).max(255),
+  fileSizeBytes: z.number().int().positive().max(5 * 1024 * 1024), // 5 MB max
+});
+
 export const listPostsSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(10),
   page: z.coerce.number().min(1).default(1),
